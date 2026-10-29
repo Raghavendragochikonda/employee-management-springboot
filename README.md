@@ -1,3 +1,4 @@
+HEAD
 # Employee Management — Java Spring Boot + EC2 CI/CD
 
 This is a small Java/Spring Boot employee management app for practising the complete deployment workflow: local run → GitHub → GitHub Actions CI → SSH authentication → EC2 Docker deployment → testing → logs.
@@ -144,3 +145,5 @@ docker logs -f employee-management-springboot
 - No login/authentication is included in this employee CRUD demo.
 - Do not expose a real employee-management system publicly without authentication, authorization, HTTPS, persistent storage, validation and other production safeguards.
 - Terminate the EC2 instance when finished practising to avoid ongoing charges.
+# employee-management-springboot
+ 294022976d3ca200a61f1153c32f142ba8178680
