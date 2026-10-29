@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Employee Management</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 16px/1.5 system-ui, sans-serif; background: #f3f6fb; color: #172033; }
+    main { max-width: 1000px; margin: 36px auto; padding: 20px; }
+    .card { background: #fff; border: 1px solid #dfe6f0; border-radius: 14px; padding: 20px; margin: 16px 0; }
+    h1 { margin-bottom: 4px; } .muted { color: #667085; }
+    input, button { font: inherit; padding: 9px 11px; border-radius: 8px; border: 1px solid #cbd5e1; margin: 4px; }
+    button { background: #1d4ed8; color: white; border: 0; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e5e7eb; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #f8fafc; padding: 12px; border-radius: 8px; }
+    .row { display: flex; flex-wrap: wrap; gap: 4px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Employee Management</h1>
+  <p class="muted">Java + Spring Boot REST API · Docker · GitHub Actions · AWS EC2</p>
+  <section class="card">
+    <h2>Backend status</h2>
+    <button onclick="checkHealth()">Check API health</button>
+    <pre id="health">Not checked yet.</pre>
+  </section>
+  <section class="card">
+    <h2>Employees</h2>
+    <button onclick="loadEmployees()">Refresh employees</button>
+    <div id="employees">Loading employees...</div>
+  </section>
+  <section class="card">
+    <h2>Add employee</h2>
+    <form id="employeeForm" class="row">
+      <input id="name" placeholder="Full name" required>
+      <input id="email" type="email" placeholder="Email" required>
+      <input id="department" placeholder="Department" required>
+      <input id="role" placeholder="Role" required>
+      <button type="submit">Add employee</button>
+    </form>
+    <pre id="result">Fill in the fields to add an employee.</pre>
+  </section>
+</main>
+<script>
+async function checkHealth() {
+  const response = await fetch('/api/health');
+  document.getElementById('health').textContent = JSON.stringify(await response.json(), null, 2);
+}
+async function loadEmployees() {
+  const container = document.getElementById('employees');
+  try {
+    const response = await fetch('/api/employees');
+    const employees = await response.json();
+    if (!employees.length) { container.textContent = 'No employees found.'; return; }
+    container.innerHTML = `<table><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Department</th><th>Role</th><th>Action</th></tr></thead><tbody>${employees.map(e =>
+      `<tr><td>${e.id}</td><td>${escapeHtml(e.name)}</td><td>${escapeHtml(e.email)}</td><td>${escapeHtml(e.department)}</td><td>${escapeHtml(e.role)}</td><td><button onclick="deleteEmployee(${e.id})">Delete</button></td></tr>`
+    ).join('')}</tbody></table>`;
+  } catch (error) { container.textContent = 'Could not load employees: ' + error.message; }
+}
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+document.getElementById('employeeForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  const payload = {
+    name: document.getElementById('name').value,
+    email: document.getElementById('email').value,
+    department: document.getElementById('department').value,
+    role: document.getElementById('role').value
+  };
+  const response = await fetch('/api/employees', {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
+  });
+  const data = response.status === 204 ? {} : await response.json().catch(() => ({}));
+  document.getElementById('result').textContent = JSON.stringify({httpStatus: response.status, ...data}, null, 2);
+  if (response.ok) { event.target.reset(); await loadEmployees(); }
+});
+async function deleteEmployee(id) {
+  const response = await fetch('/api/employees/' + id, {method:'DELETE'});
+  if (response.ok) await loadEmployees();
+  else alert('Could not delete employee (HTTP ' + response.status + ')');
+}
+loadEmployees();
+</script>
+</body>
+</html>
